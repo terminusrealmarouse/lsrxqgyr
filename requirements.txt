@@ -3,3 +3,4 @@ torchvision>=0.15
 numpy
 matplotlib
 scikit-image
+python-docx
