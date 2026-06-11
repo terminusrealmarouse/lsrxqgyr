@@ -1,0 +1,40 @@
+{
+  "hyperparameters": {
+    "epochs": 15,
+    "batch_size": 128,
+    "learning_rate": 0.001,
+    "noise_factor": 0.5,
+    "optimizer": "Adam",
+    "loss": "MSELoss",
+    "device": "cpu"
+  },
+  "num_parameters": 29249,
+  "epoch_losses": [
+    0.05267119157050591,
+    0.016779576912760608,
+    0.015236045033343311,
+    0.014624439090538,
+    0.01422081416302017,
+    0.013891041306639785,
+    0.013619565124959071,
+    0.013352063522219404,
+    0.013146401261851223,
+    0.012924321369130982,
+    0.01279304957966497,
+    0.012617829555609842,
+    0.012494824356091684,
+    0.012379946759038134,
+    0.012286677265535794
+  ],
+  "metrics": {
+    "test_mse": 0.012092264050830014,
+    "test_psnr": 19.48016680946833,
+    "test_ssim": 0.8312620798562168,
+    "noisy_input_psnr": 9.380272841151756
+  },
+  "artifacts": {
+    "loss_curve": "outputs\\training_loss.png",
+    "comparison_grid": "outputs\\denoise_samples.png",
+    "model_weights": "outputs\\denoising_cnn.pth"
+  }
+}
