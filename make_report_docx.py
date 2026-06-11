@@ -1,6 +1,14 @@
-"""将 MNIST CNN 实验报告导出为 Word(.docx) 文档。
+"""按「人工智能技术及应用实验报告」模板生成 MNIST CNN 实验报告(.docx)。
 
-依赖 train_mnist_cnn.py + make_diagrams.py 产生的图表与 summary.json。
+模板格式约定：
+    封面：人工智能技术及应用实验报告 /（2026年）/ 实验名称 / 专业班级 / 学生姓名·学生学号
+    一级标题：宋体 四号(14pt) 粗体，段前/段后 0.5 行，顶格
+    二级标题：宋体 小四号(12pt) 粗体
+    正文：宋体 小四号(12pt)
+    图：图题置于图下方，居中 宋体 五号(10.5pt) 粗体
+    表：表题置于表上方，居中 宋体 五号(10.5pt) 粗体，三线表
+
+依赖 train_mnist_cnn.py + make_diagrams.py 产生的图表与 outputs/summary.json。
 
 用法：
     python make_report_docx.py
@@ -11,58 +19,151 @@ from pathlib import Path
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt
 
 FIG = Path("report/figures")
 OUT = Path("report/MNIST_CNN_实验报告.docx")
-CN_FONT = "宋体"
+CN = "宋体"
+LATIN = "Times New Roman"
 
 
-def set_cn_font(run, size=None, bold=False):
-    run.font.name = "Times New Roman"
+def _font(run, size, bold=False, cn=CN):
+    run.font.name = LATIN
+    run.font.size = Pt(size)
     run.font.bold = bold
-    if size:
-        run.font.size = Pt(size)
-    run._element.rPr.rFonts.set(qn("w:eastAsia"), CN_FONT)
+    rPr = run._element.get_or_add_rPr()
+    rFonts = rPr.find(qn("w:rFonts"))
+    if rFonts is None:
+        rFonts = OxmlElement("w:rFonts")
+        rPr.append(rFonts)
+    rFonts.set(qn("w:eastAsia"), cn)
 
 
-def add_heading(doc, text, level):
-    p = doc.add_heading("", level=level)
-    run = p.add_run(text)
-    set_cn_font(run, size={1: 16, 2: 14, 3: 13}.get(level, 12), bold=True)
-    return p
-
-
-def add_para(doc, text, bold=False, size=12, align=None):
+def body(doc, text, size=12, indent=True, align=None, bold=False):
     p = doc.add_paragraph()
+    fmt = p.paragraph_format
+    fmt.space_before = Pt(0)
+    fmt.space_after = Pt(0)
+    fmt.line_spacing = 1.5
+    if indent:
+        fmt.first_line_indent = Pt(24)  # 首行缩进 2 字
     if align:
         p.alignment = align
-    run = p.add_run(text)
-    set_cn_font(run, size=size, bold=bold)
+    _font(p.add_run(text), size, bold=bold)
     return p
 
 
-def add_table(doc, rows):
-    table = doc.add_table(rows=len(rows), cols=len(rows[0]))
-    table.style = "Light Grid Accent 1"
-    for i, row in enumerate(rows):
-        for j, cell_text in enumerate(row):
-            cell = table.cell(i, j)
-            cell.text = ""
-            run = cell.paragraphs[0].add_run(str(cell_text))
-            set_cn_font(run, size=10.5, bold=(i == 0))
-    return table
+def h1(doc, num, text):
+    p = doc.add_paragraph()
+    fmt = p.paragraph_format
+    fmt.space_before = Pt(6)
+    fmt.space_after = Pt(6)
+    fmt.line_spacing = 1.5
+    _font(p.add_run(f"{num}　{text}"), 14, bold=True)
+    return p
 
 
-def add_image(doc, path, width=6.2, caption=None):
+def h2(doc, num, text):
+    p = doc.add_paragraph()
+    fmt = p.paragraph_format
+    fmt.space_before = Pt(6)
+    fmt.space_after = Pt(6)
+    fmt.line_spacing = 1.5
+    _font(p.add_run(f"{num}　{text}"), 12, bold=True)
+    return p
+
+
+def fig_caption(doc, text):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(2)
+    p.paragraph_format.space_after = Pt(6)
+    _font(p.add_run(text), 10.5, bold=True)
+
+
+def tbl_caption(doc, text):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(6)
+    p.paragraph_format.space_after = Pt(2)
+    _font(p.add_run(text), 10.5, bold=True)
+
+
+def add_image(doc, path, width):
     if not Path(path).exists():
         return
     doc.add_picture(str(path), width=Inches(width))
     doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-    if caption:
-        cap = add_para(doc, caption, size=10.5, align=WD_ALIGN_PARAGRAPH.CENTER)
-        cap.runs[0].font.italic = True
+
+
+def _set_border(elem, tag, sz, val="single"):
+    e = OxmlElement(f"w:{tag}")
+    e.set(qn("w:val"), val)
+    e.set(qn("w:sz"), str(sz))
+    e.set(qn("w:space"), "0")
+    e.set(qn("w:color"), "000000")
+    elem.append(e)
+
+
+def three_line_table(doc, rows, widths=None):
+    """生成三线表：表格顶/底为粗实线，表头下为细实线，无竖线和其它横线。"""
+    table = doc.add_table(rows=len(rows), cols=len(rows[0]))
+    table.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    tblPr = table._tbl.tblPr
+    borders = OxmlElement("w:tblBorders")
+    _set_border(borders, "top", 12)
+    _set_border(borders, "bottom", 12)
+    for tag in ("left", "right", "insideV", "insideH"):
+        _set_border(borders, tag, 0, val="none")
+    tblPr.append(borders)
+
+    for i, row in enumerate(rows):
+        for j, txt in enumerate(row):
+            cell = table.cell(i, j)
+            cell.text = ""
+            para = cell.paragraphs[0]
+            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            _font(para.add_run(str(txt)), 10.5, bold=(i == 0))
+            # 表头行下边线
+            if i == 0:
+                tcPr = cell._tc.get_or_add_tcPr()
+                tcB = OxmlElement("w:tcBorders")
+                _set_border(tcB, "bottom", 6)
+                tcPr.append(tcB)
+    return table
+
+
+def cover_line(doc, label, value=""):
+    p = doc.add_paragraph()
+    p.paragraph_format.line_spacing = 2.0
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _font(p.add_run(label), 14, bold=True)
+    run = p.add_run("　" + (value if value else "　" * 12))
+    _font(run, 14, bold=False)
+    if value:
+        run.font.underline = True
+    return p
+
+
+def build_cover(doc):
+    for _ in range(4):
+        doc.add_paragraph()
+    t = doc.add_paragraph()
+    t.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _font(t.add_run("人工智能技术及应用实验报告"), 26, bold=True)
+    y = doc.add_paragraph()
+    y.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _font(y.add_run("（2026年）"), 16, bold=True)
+    for _ in range(6):
+        doc.add_paragraph()
+    cover_line(doc, "实 验 名 称 ：", "基于卷积神经网络的 MNIST 手写数字识别")
+    cover_line(doc, "专 业 班 级 ：")
+    cover_line(doc, "学 生 姓 名 ：")
+    cover_line(doc, "学 生 学 号 ：")
+    cover_line(doc, "实 验 日 期 ：")
+    doc.add_page_break()
 
 
 def main():
@@ -73,105 +174,95 @@ def main():
     ba = s["best_test_acc"] * 100
 
     doc = Document()
-    # 默认正文字体
     normal = doc.styles["Normal"]
-    normal.font.name = "Times New Roman"
+    normal.font.name = LATIN
     normal.font.size = Pt(12)
-    normal.element.rPr.rFonts.set(qn("w:eastAsia"), CN_FONT)
+    normal.element.rPr.rFonts.set(qn("w:eastAsia"), CN)
 
-    title = doc.add_paragraph()
-    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    set_cn_font(title.add_run("实验二　基于卷积神经网络的 MNIST 手写数字识别"), size=18, bold=True)
+    build_cover(doc)
 
-    add_table(
+    # 1 实验目的
+    h1(doc, "1", "实验目的")
+    body(doc, "（1）熟悉 PyTorch 深度学习框架的使用；")
+    body(doc, "（2）熟悉卷积神经网络（CNN）的训练思路；")
+    body(doc, "（3）掌握卷积神经网络对 MNIST 手写数字的识别过程。")
+
+    # 2 实验内容
+    h1(doc, "2", "实验内容")
+    body(
         doc,
-        [
-            ["实验名称", "基于卷积神经网络的 MNIST 手写数字识别"],
-            ["专业班级", "（请填写）"],
-            ["学号", "（请填写）"],
-            ["姓名", "（请填写）"],
-            ["实验日期", "（请填写）"],
-        ],
+        "MNIST 数据库共有 7 万张手写数字图片，其中 6 万张用于训练神经网络，1 万张用于测试神经网络，"
+        "每张图片大小为 28×28 像素（单通道灰度图），标签为 0~9 共 10 类。本次实验使用 PyTorch 搭建一个"
+        "卷积神经网络模型，以实现 MNIST 手写数据的识别任务，并对训练、测试结果进行分析。",
     )
 
-    add_heading(doc, "一、实验目的", 1)
+    # 3 实验步骤
+    h1(doc, "3", "实验步骤")
     for t in [
-        "1. 熟悉 PyTorch 深度学习框架的使用；",
-        "2. 熟悉卷积神经网络（CNN）的训练思路；",
-        "3. 掌握卷积神经网络对 MNIST 手写数字的识别过程。",
+        "（1）读取数据（输入数据与目标输出数据）；",
+        "（2）创建卷积神经网络模型；",
+        "（3）训练网络；",
+        "（4）测试网络；",
+        "（5）结果输出与分析。",
     ]:
-        add_para(doc, t)
+        body(doc, t)
 
-    add_heading(doc, "二、实验内容", 1)
-    add_para(
+    # 4 实验设备
+    h1(doc, "4", "实验设备")
+    body(doc, "（1）计算机；")
+    body(doc, "（2）PyTorch 深度学习框架；")
+    body(
         doc,
-        "MNIST 数据库共有 7 万张手写数字图片，其中 6 万张用于训练、1 万张用于测试，"
-        "每张图片大小为 28×28 像素（单通道灰度图），标签为 0~9 共 10 类。本实验使用 "
-        "PyTorch 搭建一个卷积神经网络模型，完成对 MNIST 手写数字的识别任务，并对训练、"
-        "测试结果进行分析。",
+        f"（3）软件环境：Python 3.12 + torch 2.12.0（CPU）+ torchvision 0.27.0 + matplotlib。",
     )
 
-    add_heading(doc, "三、实验设备与环境", 1)
-    for t in [
-        "1. 计算机一台；",
-        "2. PyTorch 深度学习框架；",
-        f"3. 具体环境：Python 3.12 + torch 2.12.0(CPU) + torchvision 0.27.0 + matplotlib。",
-    ]:
-        add_para(doc, t)
+    # 5 实验过程
+    h1(doc, "5", "实验过程")
 
-    add_heading(doc, "四、实验步骤", 1)
-    add_para(
+    h2(doc, "5.1", "读取数据")
+    body(
         doc,
-        "实验按「读取数据 → 创建模型 → 训练网络 → 测试网络 → 结果输出与分析」五个步骤进行，"
-        "对应代码见 train_mnist_cnn.py。",
+        "使用 torchvision.datasets.MNIST 自动下载并加载训练集（60000 张）与测试集（10000 张）。"
+        "预处理时先用 ToTensor() 将像素归一化到 [0,1]，再用 MNIST 全局均值/标准差 "
+        "Normalize((0.1307,),(0.3081,)) 做标准化，使输入分布更稳定、收敛更快。训练集 batch_size=64 "
+        "且随机打乱，测试集 batch_size=1000。输入数据为形状 [N,1,28,28] 的图像张量，目标输出为形状 "
+        "[N] 的整数标签（0~9）。",
     )
 
-    add_heading(doc, "4.1 读取数据（输入数据与目标输出数据）", 2)
-    for t in [
-        "· 使用 torchvision.datasets.MNIST 自动下载并加载训练集(60000 张)与测试集(10000 张)。",
-        "· 预处理：ToTensor() 归一化到 [0,1]，再用 Normalize((0.1307,),(0.3081,)) 做标准化。",
-        "· 训练集 batch_size=64 且 shuffle=True；测试集 batch_size=1000 不打乱。",
-        "· 输入数据为形状 [N,1,28,28] 的图像张量；目标输出为形状 [N] 的整数标签(0~9)。",
-    ]:
-        add_para(doc, t)
-
-    add_heading(doc, "4.2 创建卷积神经网络模型", 2)
-    add_para(doc, "网络结构示意图如下：")
-    add_image(doc, FIG / "architecture.png", width=6.5, caption="图1 CNN 网络结构示意图")
-    add_table(
+    h2(doc, "5.2", "创建卷积神经网络模型")
+    body(doc, "本实验搭建的卷积神经网络结构示意图如图 1 所示，各层配置如表 1 所示。")
+    add_image(doc, FIG / "architecture.png", width=6.4)
+    fig_caption(doc, "图 1　CNN 网络结构示意图")
+    tbl_caption(doc, "表 1　网络各层配置")
+    three_line_table(
         doc,
         [
             ["层", "配置", "输出尺寸"],
-            ["输入 Input", "单通道灰度图", "1 × 28 × 28"],
-            ["卷积 Conv1", "3×3, 1→32, padding=1, ReLU", "32 × 28 × 28"],
-            ["池化 Pool1", "MaxPool 2×2", "32 × 14 × 14"],
-            ["卷积 Conv2", "3×3, 32→64, padding=1, ReLU", "64 × 14 × 14"],
-            ["池化 Pool2", "MaxPool 2×2", "64 × 7 × 7"],
+            ["输入 Input", "单通道灰度图", "1×28×28"],
+            ["卷积 Conv1", "3×3, 1→32, padding=1, ReLU", "32×28×28"],
+            ["池化 Pool1", "MaxPool 2×2", "32×14×14"],
+            ["卷积 Conv2", "3×3, 32→64, padding=1, ReLU", "64×14×14"],
+            ["池化 Pool2", "MaxPool 2×2", "64×7×7"],
             ["展平 Flatten", "—", "3136"],
             ["全连接 FC1", "3136→128, ReLU, Dropout 0.5", "128"],
             ["全连接 FC2", "128→10", "10"],
         ],
     )
-    add_para(doc, "模型可训练参数总数：421,642。")
-
-    add_heading(doc, "4.3 训练网络", 2)
-    for t in [
-        "· 损失函数：交叉熵损失 CrossEntropyLoss（内部含 Softmax，适合多分类）；",
-        "· 优化器：Adam，学习率 lr=0.001；",
-        "· 迭代次数 Epochs=10；每轮做前向→计算损失→反向传播→参数更新；",
-        "· 随机种子固定为 42，保证结果可复现。",
-    ]:
-        add_para(doc, t)
-
-    add_heading(doc, "4.4 测试网络", 2)
-    add_para(
+    body(
         doc,
-        "每个 epoch 结束后，在 1 万张测试集上用 model.eval()+torch.no_grad() 评估损失与准确率"
-        "（准确率 = 预测正确样本数 / 总样本数），并记录最优精度。",
+        "网络由两组「卷积+ReLU+最大池化」逐层提取边缘、笔画等局部空间特征并降低分辨率，再经全连接层"
+        "映射到 10 个类别得分，其中 Dropout(0.5) 用于抑制过拟合。模型可训练参数总数为 421,642。",
     )
 
-    add_heading(doc, "五、神经网络参数设置（汇总）", 1)
-    add_table(
+    h2(doc, "5.3", "训练网络")
+    body(
+        doc,
+        "损失函数采用交叉熵损失 CrossEntropyLoss（内部含 Softmax，适合多分类）；优化器采用 Adam，"
+        "学习率 lr=0.001；迭代次数 Epochs=10；随机种子固定为 42 以保证可复现。每个 epoch 遍历一次全部"
+        "训练数据，按 batch 执行前向传播→计算损失→反向传播→参数更新。具体神经网络参数设置见表 2。",
+    )
+    tbl_caption(doc, "表 2　神经网络参数设置")
+    three_line_table(
         doc,
         [
             ["参数", "取值"],
@@ -187,10 +278,19 @@ def main():
         ],
     )
 
-    add_heading(doc, "六、实验结果与分析", 1)
-    add_heading(doc, "6.1 训练/测试日志与最终精度（精度截图）", 2)
-    add_image(doc, FIG / "results_panel.png", width=6.5, caption="图2 训练日志与最终测试精度")
-    add_table(
+    h2(doc, "5.4", "测试网络")
+    body(
+        doc,
+        "每个 epoch 结束后，在 1 万张测试集上使用 model.eval() 与 torch.no_grad() 模式评估损失与准确率"
+        "（准确率 = 预测正确样本数 / 总样本数），并记录最优精度。",
+    )
+
+    h2(doc, "5.5", "结果输出与分析")
+    body(doc, "完整训练日志与最终测试精度如图 2 所示，逐轮训练/测试结果如表 3 所示。")
+    add_image(doc, FIG / "results_panel.png", width=6.4)
+    fig_caption(doc, "图 2　训练日志与最终测试精度")
+    tbl_caption(doc, "表 3　逐轮训练与测试结果")
+    three_line_table(
         doc,
         [["Epoch", "训练损失", "训练精度", "测试损失", "测试精度"]]
         + [
@@ -204,36 +304,45 @@ def main():
             for i in range(s["epochs"])
         ],
     )
-    add_para(doc, f"最终测试精度：{fa:.2f}%（最佳 {ba:.2f}%）。", bold=True)
+    body(doc, f"最终测试精度为 {fa:.2f}%（最佳 {ba:.2f}%），CPU 训练总耗时约 {s['train_time_sec']:.1f} 秒。", bold=True)
 
-    add_heading(doc, "6.2 损失与精度曲线", 2)
-    add_image(doc, FIG / "training_curves.png", width=6.5, caption="图3 训练/测试 损失与精度曲线")
-    for t in [
-        "· 训练损失从约 0.21 快速下降并趋于平稳，测试损失同步下降，模型有效学习且无明显过拟合；",
-        "· 测试精度第 1 个 epoch 即达 98.25%，第 3 个 epoch 后稳定在 99% 以上；",
-        "· 训练精度与测试精度差距很小，表明 Dropout 与较浅网络有效控制了过拟合。",
-    ]:
-        add_para(doc, t)
+    body(doc, "训练/测试的损失与精度曲线如图 3 所示。")
+    add_image(doc, FIG / "training_curves.png", width=6.4)
+    fig_caption(doc, "图 3　训练/测试损失与精度曲线")
+    body(
+        doc,
+        "由图可见：训练损失从约 0.21 快速下降并趋于平稳，测试损失同步下降，说明模型有效学习且无明显"
+        "过拟合；测试精度在第 1 个 epoch 即达到 98.25%，第 3 个 epoch 后稳定在 99% 以上；训练精度与测试"
+        "精度差距很小（约 0.1%），表明 Dropout 与较浅的网络结构有效控制了过拟合。",
+    )
 
-    add_heading(doc, "6.3 混淆矩阵", 2)
-    add_image(doc, FIG / "confusion_matrix.png", width=5.2, caption="图4 测试集混淆矩阵")
-    for t in [
-        "· 对角线元素占绝对多数，绝大部分样本被正确分类；",
-        "· 误分类极少，主要集中在形状相近的数字之间（如 5↔3、4↔9、7↔2）。",
-    ]:
-        add_para(doc, t)
+    body(doc, "测试集混淆矩阵如图 4 所示。")
+    add_image(doc, FIG / "confusion_matrix.png", width=4.8)
+    fig_caption(doc, "图 4　测试集混淆矩阵")
+    body(
+        doc,
+        "混淆矩阵对角线元素占绝对多数，说明绝大部分样本被正确分类；非对角线误分类数量极少，较易混淆"
+        "的情形主要集中在形状相近的数字之间（如 5↔3、4↔9、7↔2），符合手写数字的直观特点。",
+    )
 
-    add_heading(doc, "6.4 预测示例", 2)
-    add_image(doc, FIG / "sample_predictions.png", width=5.8, caption="图5 测试样本预测示例（绿色=正确）")
+    body(doc, "随机抽取的测试样本预测结果如图 5 所示（绿色标题表示预测正确）。")
+    add_image(doc, FIG / "sample_predictions.png", width=5.4)
+    fig_caption(doc, "图 5　测试样本预测示例")
 
-    add_heading(doc, "七、结论", 1)
-    for t in [
-        "1. 基于 PyTorch 成功搭建了含 2 卷积层、2 池化层、2 全连接层的 CNN，完成 MNIST 识别任务；",
-        f"2. 在 Epochs=10、batch_size=64、lr=0.001、Adam、交叉熵设置下，最终测试精度达 {fa:.2f}%（最佳 {ba:.2f}%）；",
-        "3. CNN 通过卷积+池化自动提取空间特征，具有参数共享、平移不变、精度高的优势；",
-        "4. 后续可尝试增加卷积层、加入 BatchNorm、数据增强或调整学习率以进一步提升性能。",
-    ]:
-        add_para(doc, t)
+    # 6 小结
+    h1(doc, "6", "小结")
+    body(
+        doc,
+        "本实验基于 PyTorch 成功搭建了一个包含 2 个卷积层、2 个池化层和 2 个全连接层的卷积神经网络，"
+        "完成了 MNIST 手写数字识别任务。在 Epochs=10、batch_size=64、学习率=0.001、Adam 优化器、交叉熵"
+        f"损失的设置下，模型最终在 1 万张测试图片上达到 {fa:.2f}%（最佳 {ba:.2f}%）的识别精度。",
+    )
+    body(
+        doc,
+        "实验表明，卷积神经网络通过卷积与池化自动提取图像的空间特征，相比全连接网络在图像任务上具有"
+        "参数共享、平移不变、精度高的优势。后续可尝试增加卷积层数、加入 BatchNorm、引入数据增强或调整"
+        "学习率等手段，以进一步提升模型精度或加快收敛速度。",
+    )
 
     doc.save(str(OUT))
     print(f"Saved {OUT}")
