@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# local-only ascii copies for sharing
+phase_retrieval_report*.docx
