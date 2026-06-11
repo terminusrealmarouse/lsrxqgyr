@@ -90,3 +90,52 @@ body {
   background: #4a342a;
   color: #f7f1e8;
 }
+
+/* 内页通用标题 */
+.page-head { text-align: center; padding: 48px 24px 8px; }
+.page-head h1 { font-size: 32px; margin: 0 0 8px; }
+.page-head p { color: #6b574a; margin: 0; }
+
+/* 菜单价格 */
+.price { float: right; color: #c0843f; font-size: 16px; }
+
+/* 豆单：图文交替行 */
+.classes-like .row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 28px;
+  max-width: 880px;
+  margin: 28px auto;
+  padding: 0 24px;
+}
+.classes-like .row.reverse { flex-direction: row-reverse; }
+.classes-like .row img { width: 360px; max-width: 100%; height: 240px; object-fit: cover; border-radius: 8px; }
+.classes-like .row-text { flex: 1; min-width: 240px; }
+.classes-like .row-text h3 { margin: 0 0 10px; }
+.classes-like .row-text p { color: #6b574a; }
+
+/* 空间相册 */
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  max-width: 1000px;
+  margin: 32px auto;
+  padding: 0 24px;
+}
+.gallery img { width: 100%; height: 220px; object-fit: cover; border-radius: 8px; }
+
+/* 联系 */
+.contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  max-width: 900px;
+  margin: 32px auto;
+  padding: 0 24px;
+  align-items: center;
+}
+.contact img { width: 420px; max-width: 100%; height: 280px; object-fit: cover; border-radius: 8px; }
+.contact-info { flex: 1; min-width: 240px; }
+.contact-info ul { list-style: none; padding: 0; line-height: 2; }
