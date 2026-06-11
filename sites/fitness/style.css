@@ -1,0 +1,167 @@
+/* 健身房：深色、动感、无衬线 */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Arial Black", "PingFang SC", sans-serif;
+  color: #f2f2f2;
+  background: #121316;
+  line-height: 1.6;
+}
+
+/* 顶部导航 */
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 18px 28px;
+  background: #1b1d21;
+  border-bottom: 2px solid #e63946;
+}
+.logo { margin: 0; font-size: 24px; letter-spacing: 1px; }
+.logo span { color: #e63946; margin-left: 6px; }
+
+.site-header nav a {
+  color: #c7c7c7;
+  text-decoration: none;
+  margin-left: 22px;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+.site-header nav a:hover { color: #e63946; }
+
+/* 大图区 */
+.hero { position: relative; }
+.hero img { width: 100%; height: 460px; object-fit: cover; display: block; filter: brightness(0.55); }
+.hero-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 8%;
+}
+.kicker { color: #e63946; letter-spacing: 4px; margin: 0 0 8px; text-transform: uppercase; }
+.hero-text h2 { font-size: 44px; margin: 0 0 18px; max-width: 520px; }
+
+.btn {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 14px 30px;
+  background: #e63946;
+  color: #fff;
+  text-decoration: none;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+.btn:hover { background: #c52b38; }
+
+/* 标题 */
+.section-title {
+  text-align: center;
+  font-size: 30px;
+  margin: 56px 0 32px;
+  text-transform: uppercase;
+}
+
+/* 课程行：图文交替 */
+.row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 28px;
+  max-width: 960px;
+  margin: 28px auto;
+  padding: 0 24px;
+}
+.row.reverse { flex-direction: row-reverse; }
+.row img { width: 420px; max-width: 100%; height: 260px; object-fit: cover; border-radius: 6px; }
+.row-text { flex: 1; min-width: 240px; }
+.row-text h3 { font-size: 24px; margin: 0 0 10px; color: #e63946; }
+.row-text p { color: #bdbdbd; }
+
+/* 数据 */
+.stats {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 48px;
+  margin: 64px auto;
+  padding: 40px 24px;
+  background: #1b1d21;
+}
+.stats div { text-align: center; }
+.stats strong { display: block; font-size: 40px; color: #e63946; }
+.stats span { color: #bdbdbd; font-size: 14px; }
+
+/* 底部 */
+.site-footer {
+  padding: 28px;
+  text-align: center;
+  background: #000;
+  color: #c7c7c7;
+}
+
+/* 内页标题 */
+.page-head { text-align: center; padding: 48px 24px 8px; }
+.page-head h1 { font-size: 32px; margin: 0 0 8px; text-transform: uppercase; }
+.page-head p { color: #bdbdbd; margin: 0; }
+
+/* 卡片网格（课程 / 教练） */
+.cards { padding-bottom: 24px; }
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 22px;
+  max-width: 1000px;
+  margin: 28px auto 0;
+  padding: 0 24px;
+}
+.card {
+  background: #1b1d21;
+  border: 1px solid #2a2d33;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.card img { width: 100%; height: 190px; object-fit: cover; display: block; }
+.card-body { padding: 16px; }
+.card-body h3 { margin: 0 0 6px; color: #e63946; }
+.card-body p { margin: 0; color: #bdbdbd; }
+
+/* 会员价格 */
+.pricing {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 22px;
+  max-width: 960px;
+  margin: 32px auto;
+  padding: 0 24px;
+}
+.plan {
+  background: #1b1d21;
+  border: 1px solid #2a2d33;
+  border-radius: 8px;
+  padding: 28px 22px;
+  text-align: center;
+}
+.plan.featured { border-color: #e63946; transform: translateY(-6px); }
+.plan h3 { margin: 0 0 12px; text-transform: uppercase; }
+.amount { font-size: 34px; margin: 0 0 16px; color: #e63946; }
+.amount span { font-size: 14px; color: #bdbdbd; }
+.plan ul { list-style: none; padding: 0; margin: 0 0 18px; color: #bdbdbd; line-height: 1.9; }
+
+/* 联系 */
+.contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  max-width: 900px;
+  margin: 32px auto;
+  padding: 0 24px;
+  align-items: center;
+}
+.contact img { width: 440px; max-width: 100%; height: 280px; object-fit: cover; border-radius: 6px; }
+.contact-info { flex: 1; min-width: 240px; }
+.contact-info h3 { color: #e63946; }
+.contact-info ul { list-style: none; padding: 0; line-height: 2; color: #bdbdbd; }
