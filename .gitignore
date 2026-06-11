@@ -1,0 +1,9 @@
+data/
+outputs/
+__pycache__/
+*.pyc
+*.pt
+preview/
+template.docx
+tmpl_*.txt
+*.pdf
