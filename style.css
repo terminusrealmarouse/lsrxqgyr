@@ -1,0 +1,81 @@
+/* 全局：字体、颜色、去掉默认外边距 */
+body {
+  margin: 0;
+  font-family: "Microsoft YaHei", sans-serif;
+  color: #3e2c23;
+  background: #f5efe6;
+  line-height: 1.6;
+}
+
+/* 顶部导航 */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 16px 24px;
+  background: #3e2c23;
+  color: #f5efe6;
+}
+
+.logo {
+  font-size: 20px;
+  margin: 0;
+}
+
+nav a {
+  color: #f5efe6;
+  text-decoration: none;
+  margin-left: 16px;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+/* 顶部大标题区 */
+.hero {
+  text-align: center;
+  padding: 48px 24px;
+  background: #6f4e37;
+  color: #f5efe6;
+}
+
+.hero h2 {
+  font-size: 28px;
+  margin: 0 0 12px;
+}
+
+/* 图文结合：图片在左，文字在右 */
+.item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  max-width: 900px;
+  margin: 32px auto;
+  padding: 0 24px;
+}
+
+.item img {
+  width: 320px;
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.item .text {
+  flex: 1;
+  min-width: 240px;
+}
+
+.item h3 {
+  margin-top: 0;
+}
+
+/* 底部 */
+footer {
+  text-align: center;
+  padding: 24px;
+  background: #3e2c23;
+  color: #f5efe6;
+}
